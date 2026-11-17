@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>出力画面 - しゃべるキャラクター</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #00ff00; }
+  canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; object-fit: contain; display: block; }
+  #hint { position: fixed; left: 50%; top: 16px; transform: translateX(-50%); background: rgba(0,0,0,.78); color: #fff;
+          font: 16px/1.6 -apple-system, "Hiragino Sans", "Meiryo", sans-serif; padding: 8px 18px; border-radius: 8px; transition: opacity .4s; white-space: nowrap; }
+  #hint.hide { opacity: 0; pointer-events: none; }
+  body.nocursor { cursor: none; }
+</style>
+</head>
+<body>
+<canvas id="cv" width="1920" height="1080"></canvas>
+<div id="hint" class="hide"></div>
+<script src="js/common.js"></script>
+<script src="js/stage.js"></script>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>しゃべるキャラクター - 操作画面</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header>
+  <h1>しゃべるキャラクター</h1>
+  <input id="title" type="text" class="title" placeholder="台本の名前" aria-label="台本の名前">
+  <span id="voiceStatus" class="pill wait">声：確認中</span>
+  <span id="stageStatus" class="pill ng">出力画面：未接続</span>
+  <span class="spacer"></span>
+  <button id="btnOpenStage" class="primary">出力画面を開く</button>
+  <button id="btnSave">台本を保存</button>
+  <button id="btnLoad">台本を開く</button>
+  <input id="fileLoad" type="file" accept=".json,application/json" hidden>
+</header>
+
+<main>
+  <section id="scriptPane">
+    <div class="toolbar">
+      <button id="btnNext" class="primary">▶ 次の行を再生 <kbd>Space</kbd></button>
+      <button id="btnAuto">⏭ ここから連続再生</button>
+      <button id="btnStop">■ 停止 <kbd>Esc</kbd></button>
+      <span class="spacer"></span>
+      <span id="progress" class="muted"></span>
+    </div>
+    <div id="lines"></div>
+    <div class="toolbar">
+      <button id="btnAdd">＋ 行を追加</button>
+      <button id="btnPaste">まとめて貼り付け</button>
+      <span class="spacer"></span>
+      <button id="btnClear" class="danger">すべて削除</button>
+    </div>
+    <p class="help">
+      セリフ欄：<kbd>Enter</kbd> で次の行を追加、<kbd>Shift</kbd>+<kbd>Enter</kbd> で改行、<kbd>Esc</kbd> で入力を抜ける。<br>
+      入力欄の外で：<kbd>Space</kbd> 次の行を再生／<kbd>↑</kbd><kbd>↓</kbd> 再生位置を移動／<kbd>Esc</kbd> 停止／<kbd>1</kbd>〜<kbd>5</kbd> 表情を手動で切り替え。<br>
+      行番号をクリックすると、その行が次の再生位置になります。台本と画像はこのブラウザの中に自動で保存されます。
+    </p>
+  </section>
+
+  <aside>
+    <div class="card">
+      <h2>プレビュー</h2>
+      <div class="preview"><iframe id="preview" src="stage.html?preview=1" title="プレビュー"></iframe></div>
+      <div id="faceButtons" class="faces"></div>
+    </div>
+
+    <div class="card" id="charCard">
+      <h2>キャラクター</h2>
+      <div class="row"><label for="selChar">選択中</label><select id="selChar"></select><button id="btnAddChar" title="キャラクターを追加">＋追加</button></div>
+      <div class="row"><label for="charName">名前</label><input id="charName" type="text"><button id="btnDelChar" class="danger" title="このキャラクターを削除">削除</button></div>
+    </div>
+
+    <div class="card" id="imgCard">
+      <h2>キャラクター画像 <span id="imgCount" class="muted"></span></h2>
+      <div id="slots" class="slots"></div>
+      <div class="row"><button id="btnBulk" class="primary">画像をまとめて選ぶ</button><span class="spacer"></span><button id="btnSample">サンプル</button></div>
+      <input id="fileBulk" type="file" accept="image/png,image/webp,image/jpeg" multiple hidden>
+      <input id="fileOne" type="file" accept="image/png,image/webp,image/jpeg" hidden>
+      <p class="note">枠をクリックして1枚ずつ選ぶか、ファイルを枠にドラッグします。ファイル名を <code>happy_open.png</code>・<code>喜び_開.png</code> のようにしておくと、「まとめて選ぶ」で10枚が自動で振り分けられます。背景が透明なPNGを、10枚とも同じ大きさで用意してください。</p>
+      <div class="row"><button id="btnExport">キャラクターを書き出す</button><button id="btnImport">読み込む</button></div>
+      <input id="fileImport" type="file" accept=".json,application/json" hidden>
+      <p class="note">書き出したファイル（画像と声の設定入り）を読み込むと、別のパソコンでも同じキャラクターを使えます。</p>
+    </div>
+
+    <div class="card">
+      <h2>出力画面</h2>
+      <div class="row"><label>背景色</label>
+        <div class="seg" id="bgButtons">
+          <button data-bg="#00ff00"><i style="background:#00ff00"></i>緑</button>
+          <button data-bg="#0000ff"><i style="background:#0000ff"></i>青</button>
+          <button data-bg="#ff00ff"><i style="background:#ff00ff"></i>マゼンタ</button>
+        </div>
+      </div>
+      <div class="row"><label class="check"><input id="chkVisible" type="checkbox"> このキャラクターを表示</label></div>
+      <div class="row"><label for="rngX">左右</label><input id="rngX" type="range" min="-960" max="960" step="5"><output id="outX"></output></div>
+      <div class="row"><label for="rngY">上下</label><input id="rngY" type="range" min="-540" max="540" step="5"><output id="outY"></output></div>
+      <div class="row"><label for="rngScale">大きさ</label><input id="rngScale" type="range" min="0.2" max="2" step="0.01"><output id="outScale"></output></div>
+      <div class="row"><span class="spacer"></span><button id="btnResetLayout">位置と大きさを元に戻す</button></div>
+    </div>
+
+    <div class="card">
+      <h2>声（ブラウザの読み上げ）</h2>
+      <div class="row"><label for="selVoice">声</label><select id="selVoice"></select></div>
+      <div class="row"><span class="spacer"></span><label class="check"><input id="chkAllVoices" type="checkbox"> 日本語以外の声も表示</label></div>
+      <div class="row"><label for="rngRate">話速</label><input id="rngRate" type="range" min="0.5" max="2" step="0.05"><output id="outRate"></output></div>
+      <div class="row"><label for="rngPitch">高さ</label><input id="rngPitch" type="range" min="0" max="2" step="0.05"><output id="outPitch"></output></div>
+      <div class="row"><label for="rngVol">音量</label><input id="rngVol" type="range" min="0" max="1" step="0.05"><output id="outVol"></output></div>
+      <div class="row"><button id="btnTestVoice">この設定でテスト再生</button><span class="spacer"></span><button id="btnResetVoice">元に戻す</button></div>
+      <p class="note">使える声はパソコンとブラウザによって変わります。声によっては「高さ」が効きません。</p>
+    </div>
+
+    <div class="card">
+      <h2>再生</h2>
+      <div class="row"><label for="rngGap">行の間</label><input id="rngGap" type="range" min="0" max="3" step="0.1"><output id="outGap"></output></div>
+      <div class="row"><label for="rngLip">口ぱくの速さ</label><input id="rngLip" type="range" min="0.5" max="2" step="0.05"><output id="outLip"></output></div>
+      <p class="note">音はパソコンの「サウンド出力」から出ます。ATEM へ送るときは、パソコン側の出力先を切り替えてください。</p>
+    </div>
+  </aside>
+</main>
+
+<dialog id="dlgPaste">
+  <h2>まとめて貼り付け</h2>
+  <p class="note">1行が1つのセリフになります。行頭に <code>[喜び]</code> のように書くと表情を指定できます（書かなければ「通常」）。キャラクターが複数いるときは <code>名前：</code> を先頭に付けます。</p>
+  <textarea id="pasteText" rows="12" placeholder="[喜び] みなさん、こんにちは！&#10;今日は実験のお話です。&#10;[驚き] えっ、本当ですか？"></textarea>
+  <div class="row"><span class="spacer"></span><button id="btnPasteCancel">キャンセル</button><button id="btnPasteOk" class="primary">末尾に追加</button></div>
+</dialog>
+<div id="toast" class="hide"></div>
+<script src="js/common.js"></script>
+<script src="js/control.js"></script>
+</body>
+</html>
