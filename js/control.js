@@ -315,12 +315,22 @@ function renderSlots() {
   $('#imgCount').textContent = `（${n}/10枚）`;
 }
 let pendingSlot = null;
+const SAMPLE_NAME = '魔女（サンプル）';
+const isSample = c => c.name === SAMPLE_NAME;
 async function loadSample() {
+  // すでにサンプルの魔女がいれば、増やさずにそれを選ぶ（2人目が出力画面に並んでしまうのを防ぐ）
+  const exist = project.chars.find(isSample);
+  if (exist && EMOTIONS.some(e => MOUTHS.some(m => thumbs.has(imgKey(exist.id, e.id, m.id))))) {
+    activeChar = exist.id; renderChars(); renderSettings(); renderSlots(); renderLines();
+    toast('サンプルの魔女はすでに読み込まれています。'); return;
+  }
   const c = getChar(activeChar);
   const empty = !EMOTIONS.some(e => MOUTHS.some(m => thumbs.has(imgKey(c.id, e.id, m.id))));
-  let target = c;
-  if (!empty) { if (!confirm('サンプルのキャラクター（魔女）を新しく追加します。よろしいですか？')) return; target = addChar('魔女（サンプル）'); }
-  else { c.name = '魔女（サンプル）'; }
+  let target = exist || c;
+  if (!exist) {
+    if (!empty) { if (!confirm('サンプルの魔女を「2人目のキャラクター」として追加します。\n出力画面には2人並んで表示されます。よろしいですか？')) return; target = addChar(SAMPLE_NAME); }
+    else { c.name = SAMPLE_NAME; }
+  }
   setProgress('サンプルを読み込み中…');
   try {
     for (const e of EMOTIONS) for (const m of MOUTHS) {
@@ -329,6 +339,20 @@ async function loadSample() {
     }
   } catch (err) { toast(err.message, true); }
   setProgress(''); save(); renderChars(); afterImagesChanged(target.id); sendSync();
+}
+/* 以前の版でサンプルを何度も読み込み、魔女が重複している場合は1人にまとめる */
+async function dedupeSamples() {
+  const ss = project.chars.filter(isSample);
+  if (ss.length < 2) return 0;
+  const keep = ss[0];
+  for (const c of ss.slice(1)) {
+    for (const e of EMOTIONS) for (const m of MOUTHS) await imgDel(imgKey(c.id, e.id, m.id)).catch(() => {});
+    for (const l of project.lines) if (l.char === c.id) l.char = keep.id;
+  }
+  const drop = new Set(ss.slice(1).map(c => c.id));
+  project.chars = project.chars.filter(c => !drop.has(c.id));
+  if (project.chars.length === 1) Object.assign(keep, { x: 0, y: 0 });
+  return drop.size;
 }
 
 /* ---------- キャラクターの追加・削除・書き出し ---------- */
@@ -594,6 +618,7 @@ window.addEventListener('drop', e => e.preventDefault());
 async function init() {
   if (location.protocol === 'file:') toast('ファイルを直接開くと、出力画面との連携が動かないことがあります。Webサーバー上のURLから開いてください。', true);
   project = normalize(loadLocal());
+  const merged = await dedupeSamples().catch(() => 0);
   activeChar = project.chars[0].id;
   for (const c of project.chars) faces[c.id] = 'normal';
   bindSettings(); renderChars(); renderSlots(); renderLines(); renderSettings();
@@ -603,5 +628,7 @@ async function init() {
   try { for (const c of project.chars) await loadThumbs(c.id); }
   catch (e) { toast('画像の保存領域を使えません（プライベートブラウズでは使えないことがあります）。', true); }
   renderSlots(); renderLines(); save();
+  if (merged) toast(`重なっていたサンプルの魔女（${merged}人分）を1人にまとめました。`);
+  if (/firefox/i.test(navigator.userAgent)) setTimeout(() => toast('Firefox では、行の終わりに「プツッ」という雑音が入ることがあります。Chrome・Edge・Safari の利用をおすすめします。', true), merged ? 4000 : 0);
 }
 init().catch(e => { console.error(e); toast('起動に失敗しました：' + e.message, true); });
